@@ -1,1 +1,42 @@
+name: Build-Push-Deploy #name of the workflow
+on:
+  push:
+    branches: [ "master"]
 
+jobs:
+  build_push_deploy:
+    runs-on: ubuntu-Latest #github hosted runner
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+    - name: Setup java
+      uses: actions/setup-java@v3
+      with:
+        distribution: "temurin"
+        java-version: "17"
+    - name: Build with maven
+      run: mvn -B package 
+    - name: Login to Dockerhub
+      uses: docker/Login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+    - name: Build Docker Image
+      run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/java-docker-app:latest .
+    - name: Push Docker image to DockerHub
+      run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/java-docker-app:latest
+    - name: Deploy to ec2 (bia SSH)
+      uses: appleboy/ssh-action@v1.1.0
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USERNAME}}
+        key: ${{ secrets.EC2_SSH_KEY }}
+        script:
+          #stop and remove existing container
+          -docker rum -f javaapp || true
+          #pull the latest image from DockerHUb
+          -docker pull ${{ secrets.DOCKERHUB_USERNAME }}/java-docker-app:latest
+          #run the new container
+          -docker run -d -p 8080:8080 -name javaapp ${{ secrets.DOCKERHUB_USERNAME }}/java-docker-app:latest 
+          #list the running containers
+          -docker ps
