@@ -41,7 +41,6 @@ jobs:
         key: ${{ secrets.EC2_SSH_KEY }}
         script: |
           # stop and remove existing container
-          docker stop javaapp || true
           docker rm -f javaapp || true
 
           # pull the latest image from DockerHub
