@@ -25,7 +25,7 @@ jobs:
       run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/java-docker-app:latest .
     - name: Push Docker image to DockerHub
       run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/java-docker-app:latest
-    - name: Deploy to ec2 (bia SSH)
+    - name: Deploy to ec2 (via SSH)
       uses: appleboy/ssh-action@v1.1.0
       with:
         host: ${{ secrets.EC2_HOST }}
@@ -33,10 +33,10 @@ jobs:
         key: ${{ secrets.EC2_SSH_KEY }}
         script:
           #stop and remove existing container
-          -docker rum -f javaapp || true
+          docker run -f javaapp || true
           #pull the latest image from DockerHUb
-          -docker pull ${{ secrets.DOCKERHUB_USERNAME }}/java-docker-app:latest
+          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/java-docker-app:latest
           #run the new container
-          -docker run -d -p 8080:8080 -name javaapp ${{ secrets.DOCKERHUB_USERNAME }}/java-docker-app:latest 
+          docker run -d -p 8080:8080 -name javaapp ${{ secrets.DOCKERHUB_USERNAME }}/java-docker-app:latest 
           #list the running containers
-          -docker ps
+          docker ps
